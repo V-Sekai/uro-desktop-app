@@ -11,7 +11,17 @@ defmodule Todo.MixProject do
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: aliases()
+      aliases: aliases(),
+      releases: [
+        default_release: [
+          applications: [runtime_tools: :permanent, ssl: :permanent],
+          steps: [
+            &Desktop.Deployment.prepare_release/1,
+            :assemble,
+            &Desktop.Deployment.generate_installer/1
+          ]
+        ]
+      ]
     ]
   end
 
@@ -44,11 +54,20 @@ defmodule Todo.MixProject do
 
   defp aliases do
     [
+      gettext: [
+        "gettext.extract",
+        "gettext.merge priv/gettext --locale de"
+      ],
       "assets.deploy": [
         "phx.digest.clean --all",
         "esbuild default --minify",
         "sass default --no-source-map --style=compressed",
         "phx.digest"
+      ],
+      lint: [
+        "compile",
+        "format --check-formatted",
+        "credo --ignore design"
       ]
     ]
   end
@@ -59,6 +78,8 @@ defmodule Todo.MixProject do
       {:ecto_sqlite3, "~> 0.7"},
       # {:desktop, path: "../desktop"},
       {:desktop, github: "elixir-desktop/desktop", tag: "v1.4.0"},
+      {:desktop_deployment, github: "elixir-desktop/deployment"},
+      # {:desktop_deployment, path: "../deployment", runtime: false},
 
       # Phoenix
       {:phoenix, "~> 1.6"},
